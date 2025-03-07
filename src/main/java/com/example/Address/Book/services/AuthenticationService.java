@@ -6,6 +6,8 @@ import com.example.Address.Book.dto.PassDTO;
 import com.example.Address.Book.interfaces.IAuthInterface;
 import com.example.Address.Book.entities.AuthUser;
 import com.example.Address.Book.repositories.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,7 +16,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class AuthenticationService implements IAuthInterface {
+
+    ObjectMapper obj = new ObjectMapper();
 
     @Autowired
     UserRepository userRepository;
@@ -27,11 +32,12 @@ public class AuthenticationService implements IAuthInterface {
 
     BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
-    public String register(AuthUserDTO user){
+    public String register(AuthUserDTO user) throws Exception{
 
         List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> user.getEmail().equals(authuser.getEmail())).collect(Collectors.toList());
 
         if(l1.size()>0){
+            log.error("User already registered with email: {} ", user.getEmail());
             return "User already registered";
         }
 
@@ -47,6 +53,8 @@ public class AuthenticationService implements IAuthInterface {
         //saving the user in the database
         userRepository.save(newUser);
 
+        log.info("User saved in database : {}", obj.writeValueAsString(newUser));
+
         //sending the confirmation mail to the user
         emailService.sendEmail(user.getEmail(), "Your Account is Ready!", "UserName : "+user.getFirstName()+" "+user.getLastName()+"\nEmail : "+user.getEmail()+"\nYou are registered!\nBest Regards,\nBridgelabz Team");
 
@@ -57,15 +65,18 @@ public class AuthenticationService implements IAuthInterface {
     public String login(LoginDTO user){
 
         List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> authuser.getEmail().equals(user.getEmail())).collect(Collectors.toList());
-        if(l1.size() == 0)
+        if(l1.size() == 0) {
+            log.error("User not registered with email: {} ", user.getEmail());
             return "User not registered";
-
+        }
         AuthUser foundUser = l1.get(0);
 
         //matching the stored hashed password with the password provided by user
 
-        if(!bCryptPasswordEncoder.matches(user.getPassword(), foundUser.getHashPass()))
+        if(!bCryptPasswordEncoder.matches(user.getPassword(), foundUser.getHashPass())) {
+            log.error("Invalid password entered for email {} where entered password is {}", user.getEmail(), user.getPassword());
             return "Invalid password";
+        }
 
         //creating Jwt Token
         String token = jwtTokenService.createToken(foundUser.getId());
@@ -76,20 +87,25 @@ public class AuthenticationService implements IAuthInterface {
         //saving the current status of user in database
         userRepository.save(foundUser);
 
+        log.info("User logged in with email {}", user.getEmail());
+
         return "user logged in"+"\ntoken : "+token;
     }
 
-    public AuthUserDTO forgotPassword(PassDTO pass, String email){
+    public AuthUserDTO forgotPassword(PassDTO pass, String email) throws Exception{
 
         AuthUser foundUser = userRepository.findByEmail(email);
 
-        if(foundUser == null)
+        if(foundUser == null) {
+            log.error("user not registered with email: {}", email);
             throw new RuntimeException("user not registered!");
-
+        }
         String hashpass = bCryptPasswordEncoder.encode(pass.getPassword());
 
         foundUser.setPassword(pass.getPassword());
         foundUser.setHashPass(hashpass);
+
+        log.info("Hashpassword : {} for password : {} saved for user: {}", hashpass, pass.getPassword(), obj.writeValueAsString(foundUser));
 
         userRepository.save(foundUser);
 
@@ -100,7 +116,7 @@ public class AuthenticationService implements IAuthInterface {
         return resDto;
     }
 
-    public String resetPassword(String email, String currentPass, String newPass){
+    public String resetPassword(String email, String currentPass, String newPass) throws  Exception{
 
         AuthUser foundUser = userRepository.findByEmail(email);
 
@@ -110,10 +126,14 @@ public class AuthenticationService implements IAuthInterface {
         if(!bCryptPasswordEncoder.matches(currentPass, foundUser.getHashPass()))
             return "incorrect password!";
 
-        foundUser.setHashPass(bCryptPasswordEncoder.encode(newPass));
+        String hashpass = bCryptPasswordEncoder.encode(newPass);
+
+        foundUser.setHashPass(hashpass);
         foundUser.setPassword(newPass);
 
         userRepository.save(foundUser);
+
+        log.info("Hashpassword : {} for password : {} saved for user : {}", hashpass, newPass, obj.writeValueAsString(foundUser));
 
         emailService.sendEmail(email, "Password reset status", "Your password is reset successfully");
 
