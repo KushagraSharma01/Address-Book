@@ -10,15 +10,15 @@ public interface IContactService {
 
 
 
-    public ContactDTO get(Long id) throws Exception;
+    public ContactDTO get(Long id);
 
-    public ContactDTO create(ContactDTO user) throws Exception;
+    public ContactDTO create(ContactDTO user);
 
     public String clear();
 
     public List<ContactDTO> getAll();
 
-    public ContactDTO edit(ContactDTO user, Long id) throws Exception;
+    public ContactDTO edit(ContactDTO user, Long id);
 
     public String delete(Long id);
 

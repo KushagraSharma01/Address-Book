@@ -6,7 +6,9 @@ import com.example.Address.Book.dto.ResponseDTO;
 import com.example.Address.Book.entities.ContactEntity;
 import com.example.Address.Book.interfaces.IContactService;
 import com.example.Address.Book.repositories.ContactRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.models.info.Contact;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,8 +20,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ContactService implements IContactService {
 
-    ObjectMapper obj = new ObjectMapper();
-
     @Autowired
     ContactRepository contactRepository;
 
@@ -27,34 +27,50 @@ public class ContactService implements IContactService {
         return new ResponseDTO(message, status);
     }
 
-    public ContactDTO get(Long id) throws Exception{
+    public ContactDTO get(Long id){
+        try {
 
-        ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(()->
-        {
+            ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(() ->
+            {
+                return new RuntimeException();
+            });
+
+            ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId(), foundEmp.getAddress(), foundEmp.getId());
+
+            log.info("Employee DTO send for id: {} is : {}", id, getJSON(resDto));
+
+            return resDto;
+        }
+        catch(RuntimeException e){
             log.error("Cannot find employee with id {}", id);
-            return new RuntimeException("Cannot find employee with given id");
-        });
-
-        ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId(), foundEmp.getAddress(), foundEmp.getId());
-
-        log.info("Employee DTO send for id: {} is : {}", id, obj.writeValueAsString(resDto));
-
-        return resDto;
-
+        }
+        return null;
     }
 
-    public ContactDTO create(ContactDTO user) throws Exception{
-        ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress());
+    public ContactDTO create(ContactDTO user){
+        try {
 
-        contactRepository.save(newUser);
+            ContactEntity foundEntity = contactRepository.findByEmail(user.getEmail());
 
-        log.info("Employee saved in db: {}", obj.writeValueAsString(newUser));
+            if (foundEntity != null)
+                throw new RuntimeException();
 
-        ContactDTO resDto = new ContactDTO(newUser.getName(), newUser.getEmail(), newUser.getPhoneNumber(), newUser.getAddress(), newUser.getId());
+            ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress());
 
-        log.info("Employee DTO sent: {}", obj.writeValueAsString(resDto));
+            contactRepository.save(newUser);
 
-        return resDto;
+            log.info("Employee saved in db: {}", getJSON(newUser));
+
+            ContactDTO resDto = new ContactDTO(newUser.getName(), newUser.getEmail(), newUser.getPhoneNumber(), newUser.getAddress(), newUser.getId());
+
+            log.info("Employee DTO sent: {}", getJSON(resDto));
+
+            return resDto;
+        }
+        catch(RuntimeException e){
+            log.error("Exception : {} Reason : {}", e, "User already created with given email");
+        }
+        return null;
     }
 
     public List<ContactDTO> getAll(){
@@ -66,7 +82,7 @@ public class ContactService implements IContactService {
 
     }
 
-    public ContactDTO edit(ContactDTO user, Long id) throws Exception{
+    public ContactDTO edit(ContactDTO user, Long id) {
         ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(()->{
             log.error("Cannot find employee with id : {}", id);
             return new RuntimeException("cannot find employee with given id");
@@ -77,7 +93,7 @@ public class ContactService implements IContactService {
 
         contactRepository.save(foundEmp);
 
-        log.info("Employee saved after editing in db is : {}", obj.writeValueAsString(foundEmp));
+        log.info("Employee saved after editing in db is : {}", getJSON(foundEmp));
 
         ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(),foundEmp.getPhoneNumber(), foundEmp.getAddress(), foundEmp.getId());
 
@@ -102,6 +118,16 @@ public class ContactService implements IContactService {
 
     }
 
+    public String getJSON(Object object){
+        try {
+            ObjectMapper obj = new ObjectMapper();
+            return obj.writeValueAsString(object);
+        }
+        catch(JsonProcessingException e){
+            log.error("Reason : {} Exception : {}", "Conversion error from Java Object to JSON");
+        }
+        return null;
+    }
 
 
 
