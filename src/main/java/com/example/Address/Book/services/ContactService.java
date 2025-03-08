@@ -1,11 +1,11 @@
 package com.example.Address.Book.services;
 
 
-import com.example.Address.Book.dto.EmployeeDTO;
+import com.example.Address.Book.dto.ContactDTO;
 import com.example.Address.Book.dto.ResponseDTO;
-import com.example.Address.Book.entities.EmployeeEntity;
-import com.example.Address.Book.interfaces.IEmployeeService;
-import com.example.Address.Book.repositories.EmployeeRepository;
+import com.example.Address.Book.entities.ContactEntity;
+import com.example.Address.Book.interfaces.IContactService;
+import com.example.Address.Book.repositories.ContactRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,26 +16,26 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class EmployeeService implements IEmployeeService {
+public class ContactService implements IContactService {
 
     ObjectMapper obj = new ObjectMapper();
 
     @Autowired
-    EmployeeRepository employeeRepository;
+    ContactRepository contactRepository;
 
     public ResponseDTO response(String message, String status){
         return new ResponseDTO(message, status);
     }
 
-    public EmployeeDTO get(Long id) throws Exception{
+    public ContactDTO get(Long id) throws Exception{
 
-        EmployeeEntity foundEmp = employeeRepository.findById(id).orElseThrow(()->
+        ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(()->
         {
             log.error("Cannot find employee with id {}", id);
             return new RuntimeException("Cannot find employee with given id");
         });
 
-        EmployeeDTO resDto = new EmployeeDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId());
+        ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId(), foundEmp.getAddress(), foundEmp.getId());
 
         log.info("Employee DTO send for id: {} is : {}", id, obj.writeValueAsString(resDto));
 
@@ -43,31 +43,31 @@ public class EmployeeService implements IEmployeeService {
 
     }
 
-    public EmployeeDTO create(EmployeeDTO user) throws Exception{
-        EmployeeEntity newUser = new EmployeeEntity(user.getName(), user.getEmail());
+    public ContactDTO create(ContactDTO user) throws Exception{
+        ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress());
 
-        employeeRepository.save(newUser);
+        contactRepository.save(newUser);
 
         log.info("Employee saved in db: {}", obj.writeValueAsString(newUser));
 
-        EmployeeDTO resDto = new EmployeeDTO(newUser.getName(), newUser.getEmail(), newUser.getId());
+        ContactDTO resDto = new ContactDTO(newUser.getName(), newUser.getEmail(), newUser.getPhoneNumber(), newUser.getAddress(), newUser.getId());
 
         log.info("Employee DTO sent: {}", obj.writeValueAsString(resDto));
 
         return resDto;
     }
 
-    public List<EmployeeDTO> getAll(){
+    public List<ContactDTO> getAll(){
 
-        return employeeRepository.findAll().stream().map(entity -> {
-                                                                                  EmployeeDTO newUser = new EmployeeDTO(entity.getName(), entity.getEmail(), entity.getId());
+        return contactRepository.findAll().stream().map(entity -> {
+                                                                                  ContactDTO newUser = new ContactDTO(entity.getName(), entity.getEmail(), entity.getPhoneNumber(), entity.getAddress(), entity.getId());
                                                                                   return newUser;
         }).collect(Collectors.toList());
 
     }
 
-    public EmployeeDTO edit(EmployeeDTO user, Long id) throws Exception{
-        EmployeeEntity foundEmp = employeeRepository.findById(id).orElseThrow(()->{
+    public ContactDTO edit(ContactDTO user, Long id) throws Exception{
+        ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(()->{
             log.error("Cannot find employee with id : {}", id);
             return new RuntimeException("cannot find employee with given id");
         });
@@ -75,29 +75,29 @@ public class EmployeeService implements IEmployeeService {
         foundEmp.setName(user.getName());
         foundEmp.setEmail(user.getEmail());
 
-        employeeRepository.save(foundEmp);
+        contactRepository.save(foundEmp);
 
         log.info("Employee saved after editing in db is : {}", obj.writeValueAsString(foundEmp));
 
-        EmployeeDTO resDto = new EmployeeDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId());
+        ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(),foundEmp.getPhoneNumber(), foundEmp.getAddress(), foundEmp.getId());
 
         return resDto;
     }
 
     public String delete(Long id){
-        EmployeeEntity foundUser = employeeRepository.findById(id).orElseThrow(()->{
+        ContactEntity foundUser = contactRepository.findById(id).orElseThrow(()->{
             log.error("Cannot find user with id : {}", id);
             return new RuntimeException("cannot find user with given id");
         });
 
-        employeeRepository.delete(foundUser);
+        contactRepository.delete(foundUser);
 
         return "employee deleted";
     }
 
     public String clear(){
 
-        employeeRepository.deleteAll();
+        contactRepository.deleteAll();
         return "db cleared";
 
     }
