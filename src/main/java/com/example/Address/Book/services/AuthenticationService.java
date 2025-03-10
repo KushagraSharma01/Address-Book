@@ -173,6 +173,37 @@ public class AuthenticationService implements IAuthInterface {
 
     }
 
+    public String logout(HttpServletRequest request, HttpServletResponse response){
+
+        Cookie foundCookie = null;
+
+        if(request.getCookies() ==  null)
+            return "user not logged in";
+
+        for(Cookie c : request.getCookies()){
+            if(c.getName().equals("jwt")){
+                foundCookie = c;
+                break;
+            }
+        }
+        if(foundCookie == null)
+            return "user not logged in";
+
+        ResponseCookie expiredCookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie.toString());
+
+        redisTokenService.deleteToken(jwtTokenService.decodeToken(foundCookie.getValue()).toString());
+
+        return "You are logged out";
+    }
+
     public String clear(){
 
         userRepository.deleteAll();
