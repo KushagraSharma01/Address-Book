@@ -5,6 +5,8 @@ import com.example.Address.Book.interfaces.IAuthInterface;
 import com.example.Address.Book.services.EmailService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +33,11 @@ public class UserController {
 
     //UC10 --> For User Login
     @PostMapping(path ="/login")
-    public String login(@Valid @RequestBody LoginDTO user){
+    public String login(@Valid @RequestBody LoginDTO user, HttpServletResponse response){
 
         log.info("Employee tried to login with body: {}", getJSON(user));
 
-        return iAuthInterface.login(user);
+        return iAuthInterface.login(user, response);
     }
 
     //UC11 --> For sending mail to another person
@@ -76,6 +78,8 @@ public class UserController {
         log.info("Database clear request made ");
         return iAuthInterface.clear();
     }
+
+
 
     public String getJSON(Object object){
         try {
