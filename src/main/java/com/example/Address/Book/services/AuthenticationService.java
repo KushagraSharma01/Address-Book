@@ -8,8 +8,13 @@ import com.example.Address.Book.entities.AuthUser;
 import com.example.Address.Book.repositories.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +33,9 @@ public class AuthenticationService implements IAuthInterface {
 
     @Autowired
     JwtTokenService jwtTokenService;
+
+    @Autowired
+    RedisTokenService redisTokenService;
 
     BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
@@ -65,7 +73,7 @@ public class AuthenticationService implements IAuthInterface {
     }
 
 
-    public String login(LoginDTO user){
+    public String login(LoginDTO user, HttpServletResponse response){
         try {
             List<AuthUser> l1 = userRepository.findAll().stream().filter(authuser -> authuser.getEmail().equals(user.getEmail())).collect(Collectors.toList());
             if (l1.size() == 0) {
@@ -74,7 +82,6 @@ public class AuthenticationService implements IAuthInterface {
             AuthUser foundUser = l1.get(0);
 
             //matching the stored hashed password with the password provided by user
-
             if (!bCryptPasswordEncoder.matches(user.getPassword(), foundUser.getHashPass())) {
                 log.error("Invalid password entered for email {} where entered password is {}", user.getEmail(), user.getPassword());
                 return "Invalid password";
@@ -82,6 +89,20 @@ public class AuthenticationService implements IAuthInterface {
 
             //creating Jwt Token
             String token = jwtTokenService.createToken(foundUser.getId());
+
+            //store the token generated in cookies
+            ResponseCookie resCookie = ResponseCookie.from("jwt", token)
+            .httpOnly(true)
+            .secure(false)      //set to true but for local host set it to false as local host sent uses HTTP request
+            .path("/")
+            .maxAge(3600)
+            .sameSite("Strict")
+            .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString());
+
+            //store the token in redis server as well
+            redisTokenService.saveToken(foundUser.getId().toString(), token);   //(key:useId, value: token)
 
             //setting token for user login
             foundUser.setToken(token);
@@ -174,3 +195,18 @@ public class AuthenticationService implements IAuthInterface {
 
 
 }
+
+
+
+
+//
+////store the token generated in cookies
+//ResponseCookie resCookie = ResponseCookie.from("token", token)
+//        .httpOnly(true)
+//        .secure(false)      //set to true but for local host set it to false as local host sent with HTTP request
+//        .path("/")
+//        .maxAge(3600)
+//        .sameSite("Strict")
+//        .build();
+//
+//            response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString());
