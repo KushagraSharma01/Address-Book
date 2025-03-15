@@ -27,7 +27,7 @@ public class AddressController {
     @GetMapping("/res/get/{id}")
     public ResponseDTO get1(@Valid @PathVariable Long id){
 
-        log.info("Employee tried to get with id: {}", id);
+        log.info("User tried to get with id: {}", id);
 
         return new ResponseDTO("API triggered at /res/get/{id}", "Success");
     }
@@ -35,7 +35,7 @@ public class AddressController {
     @PostMapping("/res/create")
     public ResponseDTO create1(@Valid @RequestBody ContactDTO user){
 
-        log.info("Employee tried to create with body: {}", getJSON(user));
+        log.info("User tried to create with body: {}", getJSON(user));
 
         return new ResponseDTO("API triggered at /res/create", "Success");
     }
@@ -43,7 +43,7 @@ public class AddressController {
     @GetMapping("/res/getAll")
     public ResponseDTO getAll1(){
 
-        log.info("Employee tried to getAll");
+        log.info("User tried to getAll");
 
         return new ResponseDTO("API triggered at /res/getAll", "Success");
     }
@@ -51,7 +51,7 @@ public class AddressController {
     @PutMapping("/res/edit/{id}")
     public ResponseDTO edit1(@Valid @RequestBody ContactDTO user, @Valid @PathVariable Long id){
 
-        log.info("Employee tried to edit with id : {} and body : {}", id, getJSON(user));
+        log.info("User tried to edit with id : {} and body : {}", id, getJSON(user));
 
         return new ResponseDTO("API triggered at /res/edit/{id}", "Success");
     }
@@ -59,7 +59,7 @@ public class AddressController {
     @DeleteMapping("/res/delete/{id}")
     public ResponseDTO delete1(@Valid @PathVariable Long id){
 
-        log.info("Employee tried to delete with id: {}", id);
+        log.info("User tried to delete with id: {}", id);
 
         return new ResponseDTO("API triggered at /res/delete/{id}", "Success");
     }
@@ -69,7 +69,7 @@ public class AddressController {
     @GetMapping("/res2/get/{id}")
     public ResponseDTO get2(@Valid @PathVariable Long id){
 
-        log.info("Employee tried to get with id: {}", id);
+        log.info("User tried to get with id: {}", id);
 
         return iContactService.response("API triggered at /res/get/{id}", "Success");
     }
@@ -77,7 +77,7 @@ public class AddressController {
     @PostMapping("/res2/create")
     public ResponseDTO create2(@Valid @RequestBody ContactDTO user){
 
-        log.info("Employee tried to create with body: {}", getJSON(user));
+        log.info("User tried to create with body: {}", getJSON(user));
 
         return iContactService.response("API triggered at /res/create", "Success");
     }
@@ -85,7 +85,7 @@ public class AddressController {
     @GetMapping("/res2/getAll")
     public ResponseDTO getAll2(){
 
-        log.info("Employee tried to getAll");
+        log.info("User tried to getAll");
 
         return iContactService.response("API triggered at /res/getAll", "Success");
     }
@@ -93,7 +93,7 @@ public class AddressController {
     @PutMapping("/res2/edit/{id}")
     public ResponseDTO edit2(@Valid @RequestBody ContactDTO user,@Valid @PathVariable Long id){
 
-        log.info("Employee tried to edit with id : {} and body : {}", id, getJSON(user));
+        log.info("User tried to edit with id : {} and body : {}", id, getJSON(user));
 
         return iContactService.response("API triggered at /res/edit/{id}", "Success");
     }
@@ -101,7 +101,7 @@ public class AddressController {
     @DeleteMapping("/res2/delete/{id}")
     public ResponseDTO delete2(@Valid @PathVariable Long id){
 
-        log.info("Employee tried to delete with id: {}", id);
+        log.info("User tried to delete with id: {}", id);
 
         return iContactService.response("API triggered at /res/delete/{id}", "Success");
     }
@@ -112,7 +112,7 @@ public class AddressController {
     @GetMapping("/get/{id}")
     public ContactDTO get3(@Valid @PathVariable Long id, HttpServletRequest request){
 
-        log.info("Employee tried to get with id: {}", id);
+        log.info("User tried to get with id: {}", id);
 
         return iContactService.get(id, request);
     }
@@ -120,7 +120,7 @@ public class AddressController {
     @PostMapping("/create")
     public ContactDTO create3(@Valid @RequestBody ContactDTO user, HttpServletRequest request){
 
-        log.info("Employee tried to create with body: {}", getJSON(user));
+        log.info("User tried to create with body: {}", getJSON(user));
 
         return iContactService.create(user, request);
     }
@@ -128,7 +128,7 @@ public class AddressController {
     @GetMapping("/getAll")
     public List<ContactDTO> getAll3(HttpServletRequest request){
 
-        log.info("Employee tried to getAll");
+        log.info("User tried to getAll");
 
         return iContactService.getAll(request);
     }
@@ -136,7 +136,7 @@ public class AddressController {
     @PutMapping("/edit/{id}")
     public ContactDTO edit3(@Valid @RequestBody ContactDTO user,@Valid @PathVariable Long id, HttpServletRequest request){
 
-        log.info("Employee tried to edit with id : {} and body : {}", id, getJSON(user));
+        log.info("User tried to edit with id : {} and body : {}", id, getJSON(user));
 
         return iContactService.edit(user, id, request);
     }
@@ -144,7 +144,7 @@ public class AddressController {
     @DeleteMapping("/delete/{id}")
     public String delete3(@Valid @PathVariable Long id, HttpServletRequest request){
 
-        log.info("Employee tried to delete with id: {}", id);
+        log.info("User tried to delete with id: {}", id);
 
         return iContactService.delete(id, request);
     }

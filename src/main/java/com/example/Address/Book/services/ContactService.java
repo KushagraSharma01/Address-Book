@@ -14,9 +14,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +35,12 @@ public class ContactService implements IContactService {
     @Autowired
     JwtTokenService jwtTokenService;
 
+    @Autowired
+    RedisTemplate<String, ContactDTO> cacheContacts; //for single contact fetching
+
+    @Autowired
+    RedisTemplate<String, List<ContactDTO>> cacheContactList;// for all contacts of a single user
+
     public ResponseDTO response(String message, String status){
         return new ResponseDTO(message, status);
     }
@@ -38,9 +50,14 @@ public class ContactService implements IContactService {
 
             Long userId = getUserId(request);
 
-            List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
+            if(cacheContacts.opsForValue().get("Contact"+userId+":"+id) != null) {
+                System.out.println("Done through caching");
+                return cacheContacts.opsForValue().get("Contact" + userId + ":" + id);
+            }
 
-            if(contacts.size() == 0)
+            List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getId().equals(id)).collect(Collectors.toList());
+
+            if(contacts.isEmpty())
                 throw new RuntimeException();
 
             ContactEntity foundContact = contacts.get(0);
@@ -49,10 +66,13 @@ public class ContactService implements IContactService {
 
             log.info("Contact DTO send for id: {} is : {}", id, getJSON(resDto));
 
+            //save contact dto in the redis cache
+            cacheContacts.opsForValue().set("Contact" + userId + ":" + id, resDto);
+
             return resDto;
         }
         catch(RuntimeException e){
-            log.error("Cannot find employee with id {}", id);
+            log.error("Cannot find contact with id {}", id);
         }
         return null;
     }
@@ -75,6 +95,13 @@ public class ContactService implements IContactService {
 
             log.info("Contact DTO sent: {}", getJSON(resDto));
 
+            //add the new contact in the cached contact list
+            List<ContactDTO> l1 = cacheContactList.opsForValue().get("Contact"+userId);
+            if(l1 == null)
+                l1 = new ArrayList<>();
+            l1.add(resDto);
+            cacheContactList.opsForValue().set("Contact"+userId, l1);
+
             return resDto;
         }
         catch(RuntimeException e){
@@ -88,24 +115,33 @@ public class ContactService implements IContactService {
         //fetching userId from token in cookies of user
         Long userId = getUserId(request);
 
-        return contactRepository.findByUserId(userId).stream().map(entity -> {
+        if(cacheContactList.opsForValue().get("Contact"+userId) != null) {
+            System.out.println("Done through caching");
+            return cacheContactList.opsForValue().get("Contact" + userId);
+        }
+
+        List<ContactDTO> result = contactRepository.findByUserId(userId).stream().map(entity -> {
                                                                                   ContactDTO newUser = new ContactDTO(entity.getName(), entity.getEmail(), entity.getPhoneNumber(), entity.getAddress(), entity.getId());
                                                                                   return newUser;
         }).collect(Collectors.toList());
 
+        //save list in cache memory of redis
+        cacheContactList.opsForValue().set("Contact"+userId, result);
+
+        return result;
     }
 
     public ContactDTO edit(ContactDTO user, Long id, HttpServletRequest request) {
-        
+
         Long userId = getUserId(request);
 
-        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
+        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getId().equals(id)).collect(Collectors.toList());
 
-        if(contacts.size() == 0)
+        if(contacts.isEmpty())
             throw new RuntimeException("No contact with given id found");
-        
+
         ContactEntity foundContact = contacts.get(0);
-        
+
         foundContact.setName(user.getName());
         foundContact.setEmail(user.getEmail());
 
@@ -115,14 +151,18 @@ public class ContactService implements IContactService {
 
         ContactDTO resDto = new ContactDTO(foundContact.getName(), foundContact.getEmail(),foundContact.getPhoneNumber(), foundContact.getAddress(), foundContact.getId());
 
+        //reset the contacts list and the contact cache(to freshly search the updated contact next time from db)
+        cacheContacts.delete("Contact"+userId+":"+id);
+        cacheContactList.delete("Contact"+userId);
+
         return resDto;
     }
 
     public String delete(Long id, HttpServletRequest request){
-        
+
         Long userId = getUserId(request);
 
-        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
+        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getId().equals(id)).collect(Collectors.toList());
 
         if(contacts.size() == 0)
             throw new RuntimeException("No contact with given id found");
@@ -130,6 +170,10 @@ public class ContactService implements IContactService {
         ContactEntity foundUser = contacts.get(0);
 
         contactRepository.delete(foundUser);
+
+        //reset the contacts list and the contact cache(to freshly search the updated contacts next time from db)
+        cacheContacts.delete("Contact"+userId+":"+id);
+        cacheContactList.delete("Contact"+userId);
 
         return "contact deleted";
     }
