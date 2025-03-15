@@ -61,7 +61,7 @@ public class AuthenticationService implements IAuthInterface {
 
             log.info("User saved in database : {}", getJSON(newUser));
 
-            //sending the custom message to Message Producer
+            //sending the custom message to Message Producer( Rabbit MQ)
             String customMessage = "REGISTER|"+user.getEmail()+"|"+user.getFirstName();
             messageProducer.sendMessage(customMessage);
 

@@ -9,6 +9,9 @@ import com.example.Address.Book.repositories.ContactRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.info.Contact;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,21 +26,28 @@ public class ContactService implements IContactService {
     @Autowired
     ContactRepository contactRepository;
 
+    @Autowired
+    JwtTokenService jwtTokenService;
+
     public ResponseDTO response(String message, String status){
         return new ResponseDTO(message, status);
     }
 
-    public ContactDTO get(Long id){
+    public ContactDTO get(Long id, HttpServletRequest request){
         try {
 
-            ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(() ->
-            {
-                return new RuntimeException();
-            });
+            Long userId = getUserId(request);
 
-            ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(), foundEmp.getId(), foundEmp.getAddress(), foundEmp.getId());
+            List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
 
-            log.info("Employee DTO send for id: {} is : {}", id, getJSON(resDto));
+            if(contacts.size() == 0)
+                throw new RuntimeException();
+
+            ContactEntity foundContact = contacts.get(0);
+
+            ContactDTO resDto = new ContactDTO(foundContact.getName(), foundContact.getEmail(), foundContact.getId(), foundContact.getAddress(), foundContact.getId());
+
+            log.info("Contact DTO send for id: {} is : {}", id, getJSON(resDto));
 
             return resDto;
         }
@@ -47,23 +57,23 @@ public class ContactService implements IContactService {
         return null;
     }
 
-    public ContactDTO create(ContactDTO user){
+    public ContactDTO create(ContactDTO user, HttpServletRequest request){
         try {
 
             ContactEntity foundEntity = contactRepository.findByEmail(user.getEmail());
 
-            if (foundEntity != null)
-                throw new RuntimeException();
+            //fetching userId from token in cookies of user
+            Long userId = getUserId(request);
 
-            ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress());
+            ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress(), userId);
 
             contactRepository.save(newUser);
 
-            log.info("Employee saved in db: {}", getJSON(newUser));
+            log.info("Contact saved in db: {}", getJSON(newUser));
 
             ContactDTO resDto = new ContactDTO(newUser.getName(), newUser.getEmail(), newUser.getPhoneNumber(), newUser.getAddress(), newUser.getId());
 
-            log.info("Employee DTO sent: {}", getJSON(resDto));
+            log.info("Contact DTO sent: {}", getJSON(resDto));
 
             return resDto;
         }
@@ -73,42 +83,55 @@ public class ContactService implements IContactService {
         return null;
     }
 
-    public List<ContactDTO> getAll(){
+    public List<ContactDTO> getAll(HttpServletRequest request){
 
-        return contactRepository.findAll().stream().map(entity -> {
+        //fetching userId from token in cookies of user
+        Long userId = getUserId(request);
+
+        return contactRepository.findByUserId(userId).stream().map(entity -> {
                                                                                   ContactDTO newUser = new ContactDTO(entity.getName(), entity.getEmail(), entity.getPhoneNumber(), entity.getAddress(), entity.getId());
                                                                                   return newUser;
         }).collect(Collectors.toList());
 
     }
 
-    public ContactDTO edit(ContactDTO user, Long id) {
-        ContactEntity foundEmp = contactRepository.findById(id).orElseThrow(()->{
-            log.error("Cannot find employee with id : {}", id);
-            return new RuntimeException("cannot find employee with given id");
-        });
+    public ContactDTO edit(ContactDTO user, Long id, HttpServletRequest request) {
+        
+        Long userId = getUserId(request);
 
-        foundEmp.setName(user.getName());
-        foundEmp.setEmail(user.getEmail());
+        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
 
-        contactRepository.save(foundEmp);
+        if(contacts.size() == 0)
+            throw new RuntimeException("No contact with given id found");
+        
+        ContactEntity foundContact = contacts.get(0);
+        
+        foundContact.setName(user.getName());
+        foundContact.setEmail(user.getEmail());
 
-        log.info("Employee saved after editing in db is : {}", getJSON(foundEmp));
+        contactRepository.save(foundContact);
 
-        ContactDTO resDto = new ContactDTO(foundEmp.getName(), foundEmp.getEmail(),foundEmp.getPhoneNumber(), foundEmp.getAddress(), foundEmp.getId());
+        log.info("Contact saved after editing in db is : {}", getJSON(foundContact));
+
+        ContactDTO resDto = new ContactDTO(foundContact.getName(), foundContact.getEmail(),foundContact.getPhoneNumber(), foundContact.getAddress(), foundContact.getId());
 
         return resDto;
     }
 
-    public String delete(Long id){
-        ContactEntity foundUser = contactRepository.findById(id).orElseThrow(()->{
-            log.error("Cannot find user with id : {}", id);
-            return new RuntimeException("cannot find user with given id");
-        });
+    public String delete(Long id, HttpServletRequest request){
+        
+        Long userId = getUserId(request);
+
+        List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getUserId() == id).collect(Collectors.toList());
+
+        if(contacts.size() == 0)
+            throw new RuntimeException("No contact with given id found");
+
+        ContactEntity foundUser = contacts.get(0);
 
         contactRepository.delete(foundUser);
 
-        return "employee deleted";
+        return "contact deleted";
     }
 
     public String clear(){
@@ -129,7 +152,25 @@ public class ContactService implements IContactService {
         return null;
     }
 
+    public Long getUserId(HttpServletRequest request){
 
+        //fetching token of logged in user
+        Cookie foundCookie = null;
+
+        for(Cookie c : request.getCookies()){
+            if(c.getName().equals("jwt")){
+                foundCookie = c;
+                break;
+            }
+        }
+        if(foundCookie == null)
+            throw new RuntimeException("Cannot find the login cookie");
+
+        //decode the user id from token in cookie using jwttokenservice
+        Long userId = jwtTokenService.decodeToken(foundCookie.getValue());
+
+        return userId;
+    }
 
 
 }

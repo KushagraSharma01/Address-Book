@@ -6,6 +6,7 @@ import com.example.Address.Book.dto.ResponseDTO;
 import com.example.Address.Book.interfaces.IContactService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,46 +106,47 @@ public class AddressController {
         return iContactService.response("API triggered at /res/delete/{id}", "Success");
     }
 
+
     //UC3 --> Handling REST API's using service layer with storage in database
 
     @GetMapping("/get/{id}")
-    public ContactDTO get3(@Valid @PathVariable Long id){
+    public ContactDTO get3(@Valid @PathVariable Long id, HttpServletRequest request){
 
         log.info("Employee tried to get with id: {}", id);
 
-        return iContactService.get(id);
+        return iContactService.get(id, request);
     }
 
     @PostMapping("/create")
-    public ContactDTO create3(@Valid @RequestBody ContactDTO user){
+    public ContactDTO create3(@Valid @RequestBody ContactDTO user, HttpServletRequest request){
 
         log.info("Employee tried to create with body: {}", getJSON(user));
 
-        return iContactService.create(user);
+        return iContactService.create(user, request);
     }
 
     @GetMapping("/getAll")
-    public List<ContactDTO> getAll3(){
+    public List<ContactDTO> getAll3(HttpServletRequest request){
 
         log.info("Employee tried to getAll");
 
-        return iContactService.getAll();
+        return iContactService.getAll(request);
     }
 
     @PutMapping("/edit/{id}")
-    public ContactDTO edit3(@Valid @RequestBody ContactDTO user,@Valid @PathVariable Long id){
+    public ContactDTO edit3(@Valid @RequestBody ContactDTO user,@Valid @PathVariable Long id, HttpServletRequest request){
 
         log.info("Employee tried to edit with id : {} and body : {}", id, getJSON(user));
 
-        return iContactService.edit(user, id);
+        return iContactService.edit(user, id, request);
     }
 
     @DeleteMapping("/delete/{id}")
-    public String delete3(@Valid @PathVariable Long id){
+    public String delete3(@Valid @PathVariable Long id, HttpServletRequest request){
 
         log.info("Employee tried to delete with id: {}", id);
 
-        return iContactService.delete(id);
+        return iContactService.delete(id, request);
     }
 
     @GetMapping("/clear")
