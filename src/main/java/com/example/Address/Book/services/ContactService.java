@@ -62,7 +62,7 @@ public class ContactService implements IContactService {
 
             ContactEntity foundContact = contacts.get(0);
 
-            ContactDTO resDto = new ContactDTO(foundContact.getName(), foundContact.getEmail(), foundContact.getId(), foundContact.getAddress(), foundContact.getId());
+            ContactDTO resDto = new ContactDTO(foundContact.getName(), foundContact.getEmail(), foundContact.getPhoneNumber(), foundContact.getAddress(), foundContact.getId());
 
             log.info("Contact DTO send for id: {} is : {}", id, getJSON(resDto));
 
@@ -97,9 +97,12 @@ public class ContactService implements IContactService {
 
             //add the new contact in the cached contact list
             List<ContactDTO> l1 = cacheContactList.opsForValue().get("Contact"+userId);
+
             if(l1 == null)
                 l1 = new ArrayList<>();
+
             l1.add(resDto);
+
             cacheContactList.opsForValue().set("Contact"+userId, l1);
 
             return resDto;
@@ -144,6 +147,8 @@ public class ContactService implements IContactService {
 
         foundContact.setName(user.getName());
         foundContact.setEmail(user.getEmail());
+        foundContact.setAddress(user.getAddress());
+        foundContact.setPhoneNumber(user.getPhoneNumber());
 
         contactRepository.save(foundContact);
 
