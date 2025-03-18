@@ -6,6 +6,8 @@ import com.example.Address.Book.dto.PassDTO;
 import com.example.Address.Book.interfaces.IAuthInterface;
 import com.example.Address.Book.entities.AuthUser;
 import com.example.Address.Book.repositories.UserRepository;
+import com.example.Address.Book.utils.JwtTokenService;
+import com.example.Address.Book.utils.RedisTokenService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
@@ -91,19 +93,9 @@ public class AuthenticationService implements IAuthInterface {
             //creating Jwt Token
             String token = jwtTokenService.createToken(foundUser.getId());
 
-            //store the token generated in cookies
-            ResponseCookie resCookie = ResponseCookie.from("jwt", token)
-            .httpOnly(true)
-            .secure(false)      //set to true but for local host set it to false as local host sent uses HTTP request
-            .path("/")
-            .maxAge(3600)
-            .sameSite("Strict")
-            .build();
-
-            response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString());
-
-            //store the token in redis server as well
-            redisTokenService.saveToken(foundUser.getId().toString(), token);   //(key:useId, value: token)
+            //setting token in header of response
+            System.out.println(token);
+            response.addHeader("Authorization", "Bearer : "+token);
 
             //setting token for user login
             foundUser.setToken(token);

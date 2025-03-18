@@ -77,11 +77,11 @@ public class AuthenticationServiceTest {
         assertTrue(res.contains("user logged in"), "log in test failure");
 
         //checking the creation of token in cookies of response
-        String jwtCookie = response.getHeader("Set-Cookie");
+        String jwtToken = response.getHeader("Authorization");
 
-        System.out.println(jwtCookie);
+        System.out.println(jwtToken);
 
-        assertNotNull(jwtCookie, "JWT cookie should be set in response");
+        assertNotNull(jwtToken, "JWT Token should be set in response");
 
     }
 

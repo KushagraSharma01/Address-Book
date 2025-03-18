@@ -1,4 +1,4 @@
-package com.example.Address.Book.services;
+package com.example.Address.Book.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

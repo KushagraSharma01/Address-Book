@@ -60,10 +60,9 @@ public class ContactServiceTest {
 
         iAuthInterface.login(userLogin, response);
 
-        Cookie dummyCookie = new Cookie("jwt", response.getCookie("jwt").getValue());
+        String auth = response.getHeader("Authorization");
 
-        request.setCookies(dummyCookie);
-
+        request.addHeader("Authorization", auth);
 
     }
 

@@ -6,23 +6,18 @@ import com.example.Address.Book.dto.ResponseDTO;
 import com.example.Address.Book.entities.ContactEntity;
 import com.example.Address.Book.interfaces.IContactService;
 import com.example.Address.Book.repositories.ContactRepository;
+import com.example.Address.Book.utils.JwtTokenService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.models.info.Contact;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +50,7 @@ public class ContactService implements IContactService {
                 return cacheContacts.opsForValue().get("Contact" + userId + ":" + id);
             }
 
+            System.out.println(userId);
             List<ContactEntity> contacts = contactRepository.findByUserId(userId).stream().filter(entity -> entity.getId().equals(id)).collect(Collectors.toList());
 
             if(contacts.isEmpty())
@@ -204,19 +200,13 @@ public class ContactService implements IContactService {
     public Long getUserId(HttpServletRequest request){
 
         //fetching token of logged in user
-        Cookie foundCookie = null;
-
-        for(Cookie c : request.getCookies()){
-            if(c.getName().equals("jwt")){
-                foundCookie = c;
-                break;
-            }
-        }
-        if(foundCookie == null)
+       String auth = request.getHeader("Authorization");
+       System.out.println(auth.substring(9));
+        if(auth == null)
             throw new RuntimeException("Cannot find the login cookie");
 
         //decode the user id from token in cookie using jwttokenservice
-        Long userId = jwtTokenService.decodeToken(foundCookie.getValue());
+        Long userId = jwtTokenService.decodeToken(auth.substring(9));
 
         return userId;
     }
