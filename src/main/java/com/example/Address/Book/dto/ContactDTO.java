@@ -23,7 +23,7 @@ public class ContactDTO {
 
     Long phoneNumber;
 
-    String Address;
+    String address;
 
     Long id;
 
@@ -31,7 +31,7 @@ public class ContactDTO {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        Address = address;
+        address = address;
     }
 
 

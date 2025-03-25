@@ -19,12 +19,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@CrossOrigin(origins = "http://localhost:4200")
 public class AuthenticationService implements IAuthInterface {
 
     @Autowired
@@ -96,6 +98,17 @@ public class AuthenticationService implements IAuthInterface {
             //setting token in header of response
             System.out.println(token);
             response.addHeader("Authorization", "Bearer : "+token);
+
+            //store the token generated in cookies
+            ResponseCookie resCookie = ResponseCookie.from("jwt", token)
+                    .httpOnly(true)
+                    .secure(false)      //set to true but for local host set it to false as local host sent uses HTTP request
+                    .path("/")
+                    .maxAge(3600*60)
+                    .sameSite("Strict")
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString());
 
             //setting token for user login
             foundUser.setToken(token);

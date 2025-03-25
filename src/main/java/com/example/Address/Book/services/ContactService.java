@@ -80,7 +80,8 @@ public class ContactService implements IContactService {
 
             //fetching userId from token in cookies of user
             Long userId = getUserId(request);
-
+            if(userId == 0)
+                return null;
             ContactEntity newUser = new ContactEntity(user.getName(), user.getEmail(), user.getPhoneNumber(), user.getAddress(), userId);
 
             contactRepository.save(newUser);
@@ -91,15 +92,8 @@ public class ContactService implements IContactService {
 
             log.info("Contact DTO sent: {}", getJSON(resDto));
 
-            //add the new contact in the cached contact list
-            List<ContactDTO> l1 = cacheContactList.opsForValue().get("Contact"+userId);
+            cacheContactList.delete("Contact" + userId);
 
-            if(l1 == null)
-                l1 = new ArrayList<>();
-
-            l1.add(resDto);
-
-            cacheContactList.opsForValue().set("Contact"+userId, l1);
 
             return resDto;
         }
@@ -201,13 +195,19 @@ public class ContactService implements IContactService {
 
         //fetching token of logged in user
        String auth = request.getHeader("Authorization");
-       System.out.println(auth.substring(9));
+       System.out.println(auth);
         if(auth == null)
             throw new RuntimeException("Cannot find the login cookie");
+        Long userId = 0l;
+        try{
+            //decode the user id from token in cookie using jwttokenservice
+            userId = jwtTokenService.decodeToken(auth.substring(7));
+        }catch(Exception e){
+            System.out.println(e);
 
-        //decode the user id from token in cookie using jwttokenservice
-        Long userId = jwtTokenService.decodeToken(auth.substring(9));
+        }
 
+        System.out.println(userId);
         return userId;
     }
 
