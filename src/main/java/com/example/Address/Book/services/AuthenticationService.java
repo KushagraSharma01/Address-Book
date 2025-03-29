@@ -97,7 +97,7 @@ public class AuthenticationService implements IAuthInterface {
 
             //setting token in header of response
             System.out.println(token);
-            response.addHeader("Authorization", "Bearer : "+token);
+            response.addHeader("Authorization", "Bearer "+token);
 
             //store the token generated in cookies
             ResponseCookie resCookie = ResponseCookie.from("jwt", token)

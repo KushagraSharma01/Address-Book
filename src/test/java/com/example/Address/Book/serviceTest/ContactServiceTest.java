@@ -61,7 +61,7 @@ public class ContactServiceTest {
         iAuthInterface.login(userLogin, response);
 
         String auth = response.getHeader("Authorization");
-
+        System.out.println(auth);
         request.addHeader("Authorization", auth);
 
     }
@@ -76,7 +76,7 @@ public class ContactServiceTest {
     public void createTest(){
 
         ContactDTO newContact = new ContactDTO("Kushagra Sharma", "kushagrasharma@gmail.com", 982749202L, "Agra");
-
+        System.out.println(request.getHeader("Authorization"));
         ContactDTO resDto = iContactService.create(newContact, request);
 
         assertNotNull(resDto);
