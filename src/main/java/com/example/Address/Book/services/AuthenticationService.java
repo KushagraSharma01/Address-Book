@@ -104,7 +104,7 @@ public class AuthenticationService implements IAuthInterface {
                     .httpOnly(true)
                     .secure(false)      //set to true but for local host set it to false as local host sent uses HTTP request
                     .path("/")
-                    .maxAge(3600*60)
+                    .maxAge(3600)
                     .sameSite("Strict")
                     .build();
 
